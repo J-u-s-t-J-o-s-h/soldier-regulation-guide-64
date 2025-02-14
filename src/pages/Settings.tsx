@@ -1,7 +1,6 @@
-
 import { Settings as SettingsIcon, CreditCard, User } from "lucide-react";
 import { SubscriptionTiers } from "@/components/SubscriptionTiers";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 
 const Settings = () => {
@@ -11,17 +10,14 @@ const Settings = () => {
         <AppSidebar />
         <main className="flex-1">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-military-gold flex items-center gap-2">
-                  <SettingsIcon className="h-8 w-8" />
-                  Settings
-                </h1>
-                <p className="text-military-muted">
-                  Manage your account settings and subscription
-                </p>
-              </div>
-              <SidebarTrigger />
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-military-gold flex items-center gap-2">
+                <SettingsIcon className="h-8 w-8" />
+                Settings
+              </h1>
+              <p className="text-military-muted">
+                Manage your account settings and subscription
+              </p>
             </div>
 
             <div className="max-w-4xl mx-auto space-y-8">
