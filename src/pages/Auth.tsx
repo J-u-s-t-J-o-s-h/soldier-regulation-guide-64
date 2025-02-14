@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Mail, Lock } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,7 +22,53 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8 animate-fade-up">
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <Shield className="h-12 w-12 text-military-gold" />
+            <svg
+              className="h-16 w-16"
+              viewBox="0 0 200 200"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* Outer Circle */}
+              <circle
+                cx="100"
+                cy="100"
+                r="98"
+                fill="#2C4A2C"
+                stroke="#BFB393"
+                strokeWidth="4"
+              />
+              {/* Shield Background */}
+              <path
+                d="M100 35C138.66 35 170 66.34 170 105C170 143.66 138.66 175 100 175C61.34 175 30 143.66 30 105C30 66.34 61.34 35 100 35Z"
+                fill="#4A5D4F"
+              />
+              {/* Book Icon */}
+              <path
+                d="M80 75V135H130V75H80ZM125 130H85V80H125V130Z"
+                fill="#BFB393"
+              />
+              <rect
+                x="90"
+                y="90"
+                width="30"
+                height="4"
+                fill="#BFB393"
+              />
+              <rect
+                x="90"
+                y="100"
+                width="30"
+                height="4"
+                fill="#BFB393"
+              />
+              <rect
+                x="90"
+                y="110"
+                width="20"
+                height="4"
+                fill="#BFB393"
+              />
+            </svg>
           </div>
           <h2 className="text-3xl font-bold text-military-gold">
             Army Regulations Guide
