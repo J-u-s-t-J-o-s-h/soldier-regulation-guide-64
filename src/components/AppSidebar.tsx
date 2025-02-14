@@ -52,11 +52,17 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigationItems.map((item) => (
-                  <Link key={item.title} to={item.url}>
+                  <Link 
+                    key={item.title} 
+                    to={item.url}
+                    className="w-full"
+                  >
                     <SidebarMenuItem>
-                      <SidebarMenuButton>
-                        <item.icon className="h-5 w-5" />
-                        <span className="text-sm font-medium">{item.title}</span>
+                      <SidebarMenuButton className="w-full justify-start gap-3">
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium truncate">
+                          {item.title}
+                        </span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </Link>
