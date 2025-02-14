@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock } from "lucide-react";
+import { Shield, Mail, Lock } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,35 +22,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8 animate-fade-up">
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <svg
-              className="h-16 w-16"
-              viewBox="0 0 200 200"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle
-                cx="100"
-                cy="100"
-                r="98"
-                stroke="#BFB393"
-                strokeWidth="4"
-                fill="#2C4A2C"
-              />
-              <path
-                d="M100 40C130 40 155 65 155 95C155 125 130 150 100 150C70 150 45 125 45 95C45 65 70 40 100 40Z"
-                fill="#4A5D4F"
-              />
-              <path
-                d="M85 75C85 72 87 70 90 70H110C113 70 115 72 115 75V115C115 118 113 120 110 120H90C87 120 85 118 85 115V75ZM90 75V115H110V75H90Z"
-                fill="#BFB393"
-              />
-              <path
-                d="M92 85H108M92 95H108M92 105H102"
-                stroke="#BFB393"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-            </svg>
+            <Shield className="h-12 w-12 text-military-gold" />
           </div>
           <h2 className="text-3xl font-bold text-military-gold">
             Army Regulations Guide
