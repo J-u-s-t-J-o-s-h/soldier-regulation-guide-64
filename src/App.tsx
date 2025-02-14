@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import Regulations from "./pages/Regulations";
+import Bookmarks from "./pages/Bookmarks";
+import AdvancedSearch from "./pages/AdvancedSearch";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,8 @@ const App = () => (
           <Route path="/home" element={<Index />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/regulations" element={<Regulations />} />
+          <Route path="/bookmarks" element={<Bookmarks />} />
+          <Route path="/advanced-search" element={<AdvancedSearch />} />
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

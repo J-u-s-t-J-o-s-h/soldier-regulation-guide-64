@@ -26,12 +26,12 @@ const navigationItems = [
   {
     title: "Bookmarks",
     icon: Bookmark,
-    url: "#bookmarks",
+    url: "/bookmarks",
   },
   {
     title: "Advanced Search",
     icon: Search,
-    url: "#search",
+    url: "/advanced-search",
   },
   {
     title: "Settings",
