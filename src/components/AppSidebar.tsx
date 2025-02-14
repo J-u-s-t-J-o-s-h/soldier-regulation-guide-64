@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Link } from "react-router-dom";
 
 const navigationItems = [
   {
@@ -20,7 +21,7 @@ const navigationItems = [
   {
     title: "Regulations",
     icon: Book,
-    url: "#regulations",
+    url: "/regulations",
   },
   {
     title: "Bookmarks",
@@ -48,28 +49,17 @@ export function AppSidebar() {
       <Sidebar className="border-r border-military-accent/20">
         <SidebarContent>
           <SidebarGroup>
-            <div className="px-3 py-4 mt-12">
-              <h2 className="mb-4 text-sm uppercase tracking-wider text-military-gold/70">
-                AR Guide
-              </h2>
-            </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      className="w-full px-3 py-2 hover:bg-military-accent/10 transition-colors rounded-md group"
-                    >
-                      <a
-                        href={item.url}
-                        className="flex items-center gap-3 text-military-text/80 hover:text-military-gold"
-                      >
-                        <item.icon className="h-4 w-4 group-hover:text-military-gold transition-colors" />
+                  <Link key={item.title} to={item.url}>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton>
+                        <item.icon className="h-5 w-5" />
                         <span className="text-sm font-medium">{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </Link>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
