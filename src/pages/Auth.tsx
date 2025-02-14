@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,45 +27,27 @@ const Auth = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Outer Circle */}
               <circle
                 cx="100"
                 cy="100"
                 r="98"
-                fill="#2C4A2C"
                 stroke="#BFB393"
                 strokeWidth="4"
+                fill="#2C4A2C"
               />
-              {/* Shield Background */}
               <path
-                d="M100 35C138.66 35 170 66.34 170 105C170 143.66 138.66 175 100 175C61.34 175 30 143.66 30 105C30 66.34 61.34 35 100 35Z"
+                d="M100 40C130 40 155 65 155 95C155 125 130 150 100 150C70 150 45 125 45 95C45 65 70 40 100 40Z"
                 fill="#4A5D4F"
               />
-              {/* Book Icon */}
               <path
-                d="M80 75V135H130V75H80ZM125 130H85V80H125V130Z"
+                d="M85 75C85 72 87 70 90 70H110C113 70 115 72 115 75V115C115 118 113 120 110 120H90C87 120 85 118 85 115V75ZM90 75V115H110V75H90Z"
                 fill="#BFB393"
               />
-              <rect
-                x="90"
-                y="90"
-                width="30"
-                height="4"
-                fill="#BFB393"
-              />
-              <rect
-                x="90"
-                y="100"
-                width="30"
-                height="4"
-                fill="#BFB393"
-              />
-              <rect
-                x="90"
-                y="110"
-                width="20"
-                height="4"
-                fill="#BFB393"
+              <path
+                d="M92 85H108M92 95H108M92 105H102"
+                stroke="#BFB393"
+                strokeWidth="3"
+                strokeLinecap="round"
               />
             </svg>
           </div>
