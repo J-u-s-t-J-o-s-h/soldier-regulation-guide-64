@@ -1,5 +1,5 @@
 
-import { Home, Book, Bookmark, Search, Settings, AlignJustify } from "lucide-react";
+import { Home, Book, Bookmark, Search, Settings, Menu } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -43,7 +43,7 @@ export function AppSidebar() {
   return (
     <>
       <SidebarTrigger className="fixed top-4 left-4 md:left-6 z-50 p-3 rounded-xl bg-white/10 backdrop-blur-md shadow-lg hover:bg-white/15 active:scale-95 transition-all duration-200 border border-white/10">
-        <AlignJustify className="h-5 w-5 text-white/90 hover:text-white transition-colors" />
+        <Menu className="h-5 w-5 text-white/90 hover:text-white transition-colors" />
       </SidebarTrigger>
       <Sidebar className="border-r border-military-accent/20">
         <SidebarContent>
