@@ -4,6 +4,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Message {
   id: string;
@@ -13,6 +14,7 @@ interface Message {
 }
 
 const Chats = () => {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -22,31 +24,58 @@ const Chats = () => {
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isLoading) return;
 
-    const newMessage: Message = {
+    const userMessage: Message = {
       id: Date.now().toString(),
       content: inputMessage,
       isUser: true,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/generate-with-ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: inputMessage,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response from AI");
+      }
+
+      const data = await response.json();
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm processing your request about Army regulations. How else can I assist you?",
+        content: data.generatedText,
         isUser: false,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, aiResponse]);
-    }, 1000);
+    } catch (error) {
+      console.error("Error calling AI:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get response from AI. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -91,6 +120,13 @@ const Chats = () => {
                       </div>
                     </div>
                   ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] p-3 rounded-lg bg-white/10 text-white">
+                        <p className="text-sm">Thinking...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
 
@@ -105,10 +141,12 @@ const Chats = () => {
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder="Type your message..."
                     className="w-full bg-white/5 backdrop-blur-sm rounded-lg py-3 pl-4 pr-12 text-military-text placeholder:text-military-muted focus:outline-none focus:ring-2 focus:ring-military-gold/50"
+                    disabled={isLoading}
                   />
                   <button
                     type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-military-gold/10 hover:bg-military-gold/20 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-military-gold/10 hover:bg-military-gold/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isLoading}
                   >
                     <Send className="h-5 w-5 text-military-gold" />
                   </button>
