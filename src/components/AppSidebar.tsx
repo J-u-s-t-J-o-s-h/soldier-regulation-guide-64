@@ -1,5 +1,5 @@
 
-import { Home, Book, Bookmark, Search, Settings, Menu } from "lucide-react";
+import { Home, Book, Bookmark, Search, Settings, Menu, MessageSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +32,11 @@ const navigationItems = [
     title: "Advanced Search",
     icon: Search,
     url: "/advanced-search",
+  },
+  {
+    title: "Chats",
+    icon: MessageSquare,
+    url: "/chats",
   },
   {
     title: "Settings",

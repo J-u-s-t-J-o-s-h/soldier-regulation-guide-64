@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import Regulations from "./pages/Regulations";
 import Bookmarks from "./pages/Bookmarks";
 import AdvancedSearch from "./pages/AdvancedSearch";
+import Chats from "./pages/Chats";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/regulations" element={<Regulations />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/advanced-search" element={<AdvancedSearch />} />
+          <Route path="/chats" element={<Chats />} />
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
