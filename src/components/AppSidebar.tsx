@@ -42,8 +42,8 @@ const navigationItems = [
 export function AppSidebar() {
   return (
     <>
-      <SidebarTrigger className="fixed top-4 left-4 md:left-6 z-50 p-2 rounded-lg bg-military-dark/90 backdrop-blur-sm hover:bg-military-dark/70 transition-all">
-        <AlignJustify className="h-6 w-6 text-military-gold hover:text-military-gold/80 transition-colors" />
+      <SidebarTrigger className="fixed top-4 left-4 md:left-6 z-50 p-3 rounded-xl bg-white/10 backdrop-blur-md shadow-lg hover:bg-white/15 active:scale-95 transition-all duration-200 border border-white/10">
+        <AlignJustify className="h-5 w-5 text-white/90 hover:text-white transition-colors" />
       </SidebarTrigger>
       <Sidebar className="border-r border-military-accent/20">
         <SidebarContent>
