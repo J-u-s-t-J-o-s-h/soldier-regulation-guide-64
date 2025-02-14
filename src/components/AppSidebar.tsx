@@ -35,7 +35,7 @@ const navigationItems = [
   {
     title: "Settings",
     icon: Settings,
-    url: "#settings",
+    url: "/settings",
   },
 ];
 
