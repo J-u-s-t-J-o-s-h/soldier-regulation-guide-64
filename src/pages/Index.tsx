@@ -2,6 +2,7 @@
 import { SearchBar } from "@/components/SearchBar";
 import { RecentSearches } from "@/components/RecentSearches";
 import { Bookmarks } from "@/components/Bookmarks";
+import { SubscriptionTiers } from "@/components/SubscriptionTiers";
 
 const Index = () => {
   return (
@@ -16,10 +17,13 @@ const Index = () => {
         </p>
       </div>
       
-      <div className="w-full space-y-6">
-        <SearchBar />
-        <RecentSearches />
-        <Bookmarks />
+      <div className="w-full space-y-12">
+        <div className="space-y-6">
+          <SearchBar />
+          <RecentSearches />
+          <Bookmarks />
+        </div>
+        <SubscriptionTiers />
       </div>
     </div>
   );
