@@ -2,7 +2,6 @@
 import { SearchBar } from "@/components/SearchBar";
 import { RecentSearches } from "@/components/RecentSearches";
 import { Bookmarks } from "@/components/Bookmarks";
-import { SubscriptionTiers } from "@/components/SubscriptionTiers";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 
@@ -29,7 +28,6 @@ const Index = () => {
                 <RecentSearches />
                 <Bookmarks />
               </div>
-              <SubscriptionTiers />
             </div>
           </div>
         </main>
