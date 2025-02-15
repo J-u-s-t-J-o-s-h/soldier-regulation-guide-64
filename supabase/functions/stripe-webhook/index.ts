@@ -14,6 +14,7 @@ serve(async (req) => {
 
   const signature = req.headers.get('stripe-signature')
   if (!signature) {
+    console.error('No stripe signature found in webhook request')
     return new Response('No signature', { status: 400 })
   }
 
@@ -21,11 +22,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!)
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
     if (!webhookSecret) {
+      console.error('Missing STRIPE_WEBHOOK_SECRET environment variable')
       throw new Error('Missing STRIPE_WEBHOOK_SECRET')
     }
 
     // Get the raw body
     const body = await req.text()
+    console.log('Received webhook with signature:', signature)
     
     // Verify the webhook signature
     let event
@@ -40,7 +43,7 @@ serve(async (req) => {
       return new Response('Invalid signature', { status: 400 })
     }
 
-    console.log(`Processing webhook event: ${event.type}`)
+    console.log(`Processing webhook event: ${event.type}`, { eventId: event.id })
 
     // Handle specific Stripe events
     switch (event.type) {
@@ -48,17 +51,31 @@ serve(async (req) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object
+        console.log('Processing subscription event:', {
+          eventType: event.type,
+          subscriptionId: subscription.id,
+          customerId: subscription.customer,
+          status: subscription.status
+        })
         
         // Get the customer to find the user_id
-        const { data: customerData } = await supabase
+        const { data: customerData, error: customerError } = await supabase
           .from('customers')
           .select('id')
           .eq('stripe_customer_id', subscription.customer)
           .single()
 
-        if (!customerData?.id) {
+        if (customerError) {
+          console.error('Error fetching customer:', customerError)
           throw new Error('Customer not found')
         }
+
+        if (!customerData?.id) {
+          console.error('Customer not found for stripe_customer_id:', subscription.customer)
+          throw new Error('Customer not found')
+        }
+
+        console.log('Found customer:', customerData)
 
         // Upsert the subscription data
         const { error: upsertError } = await supabase
@@ -86,18 +103,19 @@ serve(async (req) => {
           throw upsertError
         }
 
+        console.log('Successfully processed subscription update')
         break
       }
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error) {
     console.error('Error processing webhook:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
