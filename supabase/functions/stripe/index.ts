@@ -1,4 +1,4 @@
-
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { stripe } from './stripe.ts'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -54,13 +54,12 @@ serve(async (req) => {
     switch (req.method) {
       case 'POST': {
         const path = new URL(req.url).pathname
-        console.log('Request path:', path); // Add logging
+        console.log('Received request for path:', path)
 
-        // Updated path matching to handle /functions/v1 prefix
-        if (path.endsWith('/stripe/checkout')) {
-          const { priceId, successUrl, cancelUrl }: CreateCheckoutBody = await req.json()
+        if (path.includes('/stripe/checkout')) {
+          const { priceId, successUrl, cancelUrl } = await req.json()
+          console.log('Checkout request received:', { priceId, successUrl, cancelUrl })
 
-          // Get or create customer
           let { data: customers } = await supabaseClient
             .from('customers')
             .select('stripe_customer_id')
@@ -68,6 +67,7 @@ serve(async (req) => {
             .single()
 
           if (!customers?.stripe_customer_id) {
+            console.log('Creating new Stripe customer for user:', user.id)
             const customer = await stripe.customers.create({
               email: user.email,
               metadata: {
@@ -83,7 +83,6 @@ serve(async (req) => {
             customers = { stripe_customer_id: customer.id }
           }
 
-          // Create checkout session
           const session = await stripe.checkout.sessions.create({
             customer: customers.stripe_customer_id,
             line_items: [{ price: priceId, quantity: 1 }],
@@ -92,12 +91,13 @@ serve(async (req) => {
             cancel_url: cancelUrl,
           })
 
-          return new Response(JSON.stringify({ sessionId: session.id }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          })
+          return new Response(
+            JSON.stringify({ sessionId: session.url }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
         }
 
-        if (path.endsWith('/stripe/portal')) {
+        if (path.includes('/stripe/portal')) {
           const { returnUrl }: CreateCustomerPortalBody = await req.json()
 
           const { data: customer } = await supabaseClient
@@ -124,7 +124,7 @@ serve(async (req) => {
           )
         }
 
-        if (path.endsWith('/stripe/webhook')) {
+        if (path.includes('/stripe/webhook')) {
           const signature = req.headers.get('stripe-signature')
           if (!signature) {
             return new Response('No signature', {
@@ -224,6 +224,7 @@ serve(async (req) => {
         })
     }
   } catch (error) {
+    console.error('Error processing request:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

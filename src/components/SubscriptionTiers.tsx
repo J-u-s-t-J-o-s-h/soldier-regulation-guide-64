@@ -1,4 +1,3 @@
-
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -35,25 +34,24 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         return;
       }
 
-      const response = await fetch('/functions/v1/stripe/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
+      const response = await supabase.functions.invoke('stripe', {
+        body: {
           priceId,
           successUrl: `${window.location.origin}/settings?success=true`,
           cancelUrl: `${window.location.origin}/settings?canceled=true`,
-        }),
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+      if (response.error) {
+        throw response.error;
       }
 
-      const { sessionId } = await response.json();
-      window.location.href = sessionId;
+      const { data: { sessionId } } = response;
+      if (sessionId) {
+        window.location.href = sessionId;
+      } else {
+        throw new Error('No session URL returned');
+      }
     } catch (error) {
       console.error('Error:', error);
       toast({
