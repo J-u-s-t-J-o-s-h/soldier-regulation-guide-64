@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 type SubscriptionStatus = "active" | "trialing" | "canceled" | "incomplete" | "incomplete_expired" | "past_due" | "unpaid" | null;
@@ -38,7 +38,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     isPremium: false,
   });
 
-  const fetchSubscription = async (userId?: string) => {
+  const fetchSubscription = useCallback(async (userId?: string) => {
     try {
       if (!userId) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -55,10 +55,14 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        return;
+      }
 
-      console.log('Subscription status updated:', sub?.status);
-
+      console.log('Subscription status:', sub?.status);
+      
+      // Only update state if component is still mounted
       setSubscription({
         status: sub?.status ?? null,
         isPremium: sub?.status === 'active' || sub?.status === 'trialing',
@@ -68,49 +72,65 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Initial fetch
-    fetchSubscription();
+    let mounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
-    // Listen for auth state changes
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const initializeSubscriptions = async () => {
+      if (!mounted) return;
+
+      // Initial fetch
+      await fetchSubscription();
+
+      // Listen for auth state changes
+      authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!mounted) return;
+        
         if (session?.user) {
           await fetchSubscription(session.user.id);
         } else {
           setSubscription({ status: null, isPremium: false });
         }
-      }
-    );
+      }).data.subscription;
 
-    // Subscribe to realtime changes on the subscriptions table
-    const channel = supabase
-      .channel('subscription-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'subscriptions',
-        },
-        async (payload) => {
-          console.log('Subscription table changed:', payload);
-          // Refetch subscription data when changes occur
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            await fetchSubscription(session.user.id);
+      // Subscribe to realtime changes
+      realtimeChannel = supabase
+        .channel('subscription-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'subscriptions',
+          },
+          async (payload) => {
+            if (!mounted) return;
+            
+            console.log('Subscription table changed:', payload);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              await fetchSubscription(session.user.id);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    };
+
+    initializeSubscriptions();
 
     return () => {
-      authSubscription.unsubscribe();
-      supabase.removeChannel(channel);
+      mounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+      }
     };
-  }, []);
+  }, [fetchSubscription]);
 
   return (
     <SubscriptionContext.Provider value={{ isLoading, subscription }}>
