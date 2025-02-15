@@ -54,7 +54,10 @@ serve(async (req) => {
     switch (req.method) {
       case 'POST': {
         const path = new URL(req.url).pathname
-        if (path === '/stripe/checkout') {
+        console.log('Request path:', path); // Add logging
+
+        // Updated path matching to handle /functions/v1 prefix
+        if (path.endsWith('/stripe/checkout')) {
           const { priceId, successUrl, cancelUrl }: CreateCheckoutBody = await req.json()
 
           // Get or create customer
@@ -94,7 +97,7 @@ serve(async (req) => {
           })
         }
 
-        if (path === '/stripe/portal') {
+        if (path.endsWith('/stripe/portal')) {
           const { returnUrl }: CreateCustomerPortalBody = await req.json()
 
           const { data: customer } = await supabaseClient
@@ -121,7 +124,7 @@ serve(async (req) => {
           )
         }
 
-        if (path === '/stripe/webhook') {
+        if (path.endsWith('/stripe/webhook')) {
           const signature = req.headers.get('stripe-signature')
           if (!signature) {
             return new Response('No signature', {
