@@ -123,12 +123,12 @@ export const SubscriptionTiers = () => {
     ],
   };
 
-  const premiumTier = {
-    name: "Premium",
+  const monthlyPremiumTier = {
+    name: "Premium Monthly",
     price: "$9.99",
-    priceId: "price_1Oo9VvBe9PHKdRig7jHUO189", // Replace placeholder with actual Stripe price ID
-    description: "Advanced features for serious professionals",
-    buttonText: "Upgrade to Premium",
+    priceId: "price_1OoMifBe9PHKdRigCcuN1234", // Monthly premium price ID
+    description: "Advanced features billed monthly",
+    buttonText: "Start Monthly Plan",
     features: [
       { name: "Unlimited AI-generated responses", included: true },
       { name: "Ad-free experience", included: true },
@@ -139,17 +139,35 @@ export const SubscriptionTiers = () => {
     ],
   };
 
+  const annualPremiumTier = {
+    name: "Premium Annual",
+    price: "$99.99",
+    priceId: "price_1OoMifBe9PHKdRigXyZN5678", // Annual premium price ID
+    description: "Save 17% with annual billing",
+    buttonText: "Start Annual Plan",
+    features: [
+      { name: "Unlimited AI-generated responses", included: true },
+      { name: "Ad-free experience", included: true },
+      { name: "Advanced search with filters", included: true },
+      { name: "Offline access to regulations", included: true },
+      { name: "Bookmarking and saving", included: true },
+      { name: "Priority support", included: true },
+      { name: "17% discount vs monthly", included: true },
+    ],
+  };
+
   return (
-    <div className="w-full max-w-5xl animate-fade-up">
+    <div className="w-full max-w-6xl animate-fade-up">
       <h2 className="text-center text-2xl font-bold text-military-gold mb-2">
         Choose Your Plan
       </h2>
       <p className="text-center text-military-muted mb-8">
         Select the plan that best fits your needs
       </p>
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         <Tier {...freeTier} />
-        <Tier {...premiumTier} highlighted />
+        <Tier {...monthlyPremiumTier} />
+        <Tier {...annualPremiumTier} highlighted />
       </div>
     </div>
   );
