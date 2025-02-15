@@ -35,6 +35,8 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         return;
       }
 
+      console.log('Creating checkout session for price:', priceId);
+
       const response = await supabase.functions.invoke('stripe/checkout', {
         body: {
           priceId,
@@ -43,12 +45,16 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         }
       });
 
+      console.log('Checkout response:', response);
+
       if (response.error) {
+        console.error('Checkout error:', response.error);
         throw response.error;
       }
 
       const { data: { sessionId } } = response;
       if (sessionId) {
+        console.log('Redirecting to:', sessionId);
         window.location.href = sessionId;
       } else {
         throw new Error('No session URL returned');
@@ -57,7 +63,7 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again later.",
+        description: "Failed to start checkout process. Please try again later.",
         variant: "destructive",
       });
     }
