@@ -56,23 +56,14 @@ const Chats = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/generate-with-ai", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('generate-with-ai', {
+        body: {
           prompt: inputMessage,
           userId
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to get response from AI");
-      }
-
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
+      if (error) throw error;
       
       // Refetch messages to show new conversation
       refetchMessages();
