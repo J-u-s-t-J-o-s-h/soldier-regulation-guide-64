@@ -46,10 +46,14 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         return;
       }
 
+      console.log('Fetching subscription for user:', session.user.id);
+
       const { data: sub, error } = await supabase
         .from('subscriptions')
-        .select('status')
+        .select('*')
         .eq('user_id', session.user.id)
+        .order('created', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) {
@@ -57,6 +61,8 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         setState({ isLoading: false, subscription: defaultState.subscription });
         return;
       }
+
+      console.log('Subscription data:', sub);
 
       setState({
         isLoading: false,
@@ -71,6 +77,29 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     }
   };
 
+  // Set up realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('subscription-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscriptions'
+        },
+        (payload) => {
+          console.log('Subscription change detected:', payload);
+          fetchSubscription();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -78,6 +107,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       if (!mounted) return;
       
       if (session?.user) {
+        console.log('Auth state changed, fetching subscription');
         fetchSubscription();
       } else {
         setState({ isLoading: false, subscription: defaultState.subscription });
