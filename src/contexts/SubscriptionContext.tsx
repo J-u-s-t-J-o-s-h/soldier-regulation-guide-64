@@ -44,8 +44,10 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     setIsLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      
+      if (!session?.user) {
         setSubscription({ status: null, isPremium: false });
+        setIsLoading(false);
         return;
       }
 
@@ -57,13 +59,12 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
       if (error) {
         console.error('Error fetching subscription:', error);
+        setIsLoading(false);
         return;
       }
 
       const newStatus = sub?.status ?? null;
       const isPremium = newStatus === 'active' || newStatus === 'trialing';
-
-      console.log('Subscription data fetched:', { status: newStatus, isPremium, userId: session.user.id });
 
       setSubscription({
         status: newStatus,
@@ -77,12 +78,19 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
   };
 
   useEffect(() => {
-    console.log('SubscriptionProvider mounted');
-    fetchSubscription();
+    let mounted = true;
+
+    const setup = async () => {
+      if (!mounted) return;
+      await fetchSubscription();
+    };
+
+    setup();
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
+        if (!mounted) return;
+        
         if (session?.user) {
           await fetchSubscription();
         } else {
@@ -93,13 +101,19 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     );
 
     return () => {
-      console.log('SubscriptionProvider unmounting');
+      mounted = false;
       authSubscription.unsubscribe();
     };
   }, []);
 
   return (
-    <SubscriptionContext.Provider value={{ isLoading, subscription, refetchSubscription: fetchSubscription }}>
+    <SubscriptionContext.Provider 
+      value={{ 
+        isLoading, 
+        subscription, 
+        refetchSubscription: fetchSubscription 
+      }}
+    >
       {children}
     </SubscriptionContext.Provider>
   );
