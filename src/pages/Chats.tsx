@@ -204,7 +204,7 @@ const Chats = () => {
                       You've reached your daily message limit. Upgrade to Premium for unlimited messages.
                     </p>
                     <Button
-                      onClick={() => window.location.href = '/settings#upgrade'}
+                      onClick={() => window.location.href = '/settings/#upgrade'}
                       className="bg-military-gold hover:bg-military-gold/90 text-military-dark"
                     >
                       Upgrade to Premium
