@@ -13,14 +13,16 @@ interface SubscriptionContextType {
   refetchSubscription: () => Promise<void>;
 }
 
-const SubscriptionContext = createContext<SubscriptionContextType>({
+const defaultState = {
   isLoading: true,
   subscription: {
     status: null,
     isPremium: false,
   },
   refetchSubscription: async () => {},
-});
+};
+
+const SubscriptionContext = createContext<SubscriptionContextType>(defaultState);
 
 export const useSubscription = () => {
   const context = useContext(SubscriptionContext);
@@ -31,23 +33,16 @@ export const useSubscription = () => {
 };
 
 export const SubscriptionProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [subscription, setSubscription] = useState<{
-    status: SubscriptionStatus;
-    isPremium: boolean;
-  }>({
-    status: null,
-    isPremium: false,
-  });
+  const [state, setState] = useState<Omit<SubscriptionContextType, 'refetchSubscription'>>(
+    { isLoading: true, subscription: defaultState.subscription }
+  );
 
   const fetchSubscription = async () => {
-    setIsLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
-        setSubscription({ status: null, isPremium: false });
-        setIsLoading(false);
+        setState({ isLoading: false, subscription: defaultState.subscription });
         return;
       }
 
@@ -59,59 +54,49 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
       if (error) {
         console.error('Error fetching subscription:', error);
-        setIsLoading(false);
+        setState({ isLoading: false, subscription: defaultState.subscription });
         return;
       }
 
-      const newStatus = sub?.status ?? null;
-      const isPremium = newStatus === 'active' || newStatus === 'trialing';
-
-      setSubscription({
-        status: newStatus,
-        isPremium,
+      setState({
+        isLoading: false,
+        subscription: {
+          status: sub?.status ?? null,
+          isPremium: sub?.status === 'active' || sub?.status === 'trialing',
+        },
       });
     } catch (error) {
       console.error('Error in fetchSubscription:', error);
-    } finally {
-      setIsLoading(false);
+      setState({ isLoading: false, subscription: defaultState.subscription });
     }
   };
 
   useEffect(() => {
     let mounted = true;
 
-    const setup = async () => {
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      await fetchSubscription();
-    };
-
-    setup();
-
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        
-        if (session?.user) {
-          await fetchSubscription();
-        } else {
-          setSubscription({ status: null, isPremium: false });
-          setIsLoading(false);
-        }
+      
+      if (session?.user) {
+        fetchSubscription();
+      } else {
+        setState({ isLoading: false, subscription: defaultState.subscription });
       }
-    );
+    });
+
+    fetchSubscription();
 
     return () => {
       mounted = false;
-      authSubscription.unsubscribe();
+      authListener.data.subscription.unsubscribe();
     };
   }, []);
 
   return (
     <SubscriptionContext.Provider 
       value={{ 
-        isLoading, 
-        subscription, 
-        refetchSubscription: fetchSubscription 
+        ...state,
+        refetchSubscription: fetchSubscription,
       }}
     >
       {children}
