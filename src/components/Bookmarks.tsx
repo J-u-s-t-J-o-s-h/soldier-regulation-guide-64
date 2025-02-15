@@ -2,9 +2,12 @@
 import { Bookmark, Lock } from "lucide-react";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Button } from "./ui/button";
+import { useNavigate } from "react-router-dom";
 
 export const Bookmarks = () => {
   const { subscription } = useSubscription();
+  const navigate = useNavigate();
+  
   const bookmarks = [
     {
       title: "AR 670-1",
@@ -30,7 +33,7 @@ export const Bookmarks = () => {
           <Button
             variant="outline"
             className="border-military-gold text-military-gold hover:bg-military-gold/10"
-            onClick={() => window.location.href = '/settings'}
+            onClick={() => navigate("/settings#upgrade")}
           >
             Upgrade to Premium
           </Button>
