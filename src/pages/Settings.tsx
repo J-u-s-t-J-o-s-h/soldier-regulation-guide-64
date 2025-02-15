@@ -8,21 +8,39 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useSearchParams } from "react-router-dom";
 
 const Settings = () => {
   const { toast } = useToast();
-  const { subscription, isLoading } = useSubscription();
+  const { subscription, isLoading, refetchSubscription } = useSubscription();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [isEmailLoading, setIsEmailLoading] = useState(true);
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserEmail(user.email);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setIsEmailLoading(false);
       }
     };
+    
     getUser();
-  }, []);
+
+    if (searchParams.get('success') === 'true') {
+      refetchSubscription();
+      toast({
+        title: "Subscription Updated",
+        description: "Your subscription has been successfully updated.",
+      });
+    }
+  }, [refetchSubscription, searchParams, toast]);
 
   const handleManageSubscription = async () => {
     try {
@@ -80,7 +98,6 @@ const Settings = () => {
             </div>
 
             <div className="max-w-4xl mx-auto space-y-8">
-              {/* Current Plan Status */}
               <div className="military-glass p-6 rounded-lg">
                 <h2 className="text-xl font-semibold text-military-gold flex items-center gap-2 mb-4">
                   <Crown className="h-5 w-5" />
@@ -90,7 +107,11 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-medium text-military-text mb-1">
-                        {isLoading ? "Loading..." : subscription.isPremium ? "Premium Plan" : "Free Plan"}
+                        {isLoading ? (
+                          <span className="inline-block animate-pulse bg-military-accent/20 rounded h-6 w-32"></span>
+                        ) : (
+                          subscription.isPremium ? "Premium Plan" : "Free Plan"
+                        )}
                       </h3>
                       <p className="text-military-muted text-sm">
                         {subscription.isPremium ? (
@@ -100,14 +121,16 @@ const Settings = () => {
                         )}
                       </p>
                     </div>
-                    {subscription.isPremium ? (
-                      <div className="px-3 py-1 bg-military-gold/20 text-military-gold rounded-full text-sm">
-                        Active
-                      </div>
-                    ) : (
-                      <div className="px-3 py-1 bg-military-accent/20 text-military-accent rounded-full text-sm">
-                        Free Tier
-                      </div>
+                    {!isLoading && (
+                      subscription.isPremium ? (
+                        <div className="px-3 py-1 bg-military-gold/20 text-military-gold rounded-full text-sm">
+                          Active
+                        </div>
+                      ) : (
+                        <div className="px-3 py-1 bg-military-accent/20 text-military-accent rounded-full text-sm">
+                          Free Tier
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -131,7 +154,13 @@ const Settings = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-military-dark/50 rounded-lg">
                     <div>
                       <h3 className="font-medium text-military-text">Email Address</h3>
-                      <p className="text-military-muted">{userEmail || "Loading..."}</p>
+                      <p className="text-military-muted">
+                        {isEmailLoading ? (
+                          <span className="inline-block animate-pulse bg-military-accent/20 rounded h-4 w-48"></span>
+                        ) : (
+                          userEmail || "No email found"
+                        )}
+                      </p>
                     </div>
                     <button className="text-military-gold hover:text-military-gold/80 transition">
                       Change Email
@@ -149,7 +178,7 @@ const Settings = () => {
                 </div>
               </div>
 
-              {!subscription.isPremium && (
+              {!subscription.isPremium && !isLoading && (
                 <div className="military-glass p-6 rounded-lg">
                   <h2 className="text-xl font-semibold text-military-gold flex items-center gap-2 mb-4">
                     <CreditCard className="h-5 w-5" />

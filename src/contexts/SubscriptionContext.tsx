@@ -41,11 +41,11 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
   });
 
   const fetchSubscription = async () => {
+    setIsLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setSubscription({ status: null, isPremium: false });
-        setIsLoading(false);
         return;
       }
 
@@ -63,33 +63,37 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       const newStatus = sub?.status ?? null;
       const isPremium = newStatus === 'active' || newStatus === 'trialing';
 
-      console.log('Subscription status updated:', { status: newStatus, isPremium });
+      console.log('Subscription data fetched:', { status: newStatus, isPremium, userId: session.user.id });
 
       setSubscription({
         status: newStatus,
         isPremium,
       });
     } catch (error) {
-      console.error('Error fetching subscription:', error);
+      console.error('Error in fetchSubscription:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('SubscriptionProvider mounted');
     fetchSubscription();
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         if (session?.user) {
           await fetchSubscription();
         } else {
           setSubscription({ status: null, isPremium: false });
+          setIsLoading(false);
         }
       }
     );
 
     return () => {
+      console.log('SubscriptionProvider unmounting');
       authSubscription.unsubscribe();
     };
   }, []);
