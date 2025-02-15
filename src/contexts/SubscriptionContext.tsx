@@ -48,11 +48,11 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
       console.log('Fetching subscription for user:', session.user.id);
 
+      // Removed the .eq('status', 'active') filter to check for any subscription
       const { data: sub, error } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', session.user.id)
-        .eq('status', 'active')
         .order('created', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -65,12 +65,15 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
       console.log('Subscription data:', sub);
 
-      // Update the state based on the active subscription
+      // Check if the subscription is active or trialing
+      const isActiveOrTrialing = sub?.status === 'active' || sub?.status === 'trialing';
+      console.log('Subscription status:', sub?.status, 'isPremium:', isActiveOrTrialing);
+
       setState({
         isLoading: false,
         subscription: {
           status: sub?.status ?? null,
-          isPremium: Boolean(sub?.status === 'active' || sub?.status === 'trialing'),
+          isPremium: isActiveOrTrialing,
         },
       });
     } catch (error) {
