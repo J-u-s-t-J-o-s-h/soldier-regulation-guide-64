@@ -126,7 +126,7 @@ export const SubscriptionTiers = () => {
   const premiumTier = {
     name: "Premium",
     price: "$9.99",
-    priceId: "price_XXX", // Replace with your actual Stripe price ID
+    priceId: "price_1Oo9VvBe9PHKdRig7jHUO189", // Replace placeholder with actual Stripe price ID
     description: "Advanced features for serious professionals",
     buttonText: "Upgrade to Premium",
     features: [
