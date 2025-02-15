@@ -130,7 +130,7 @@ export const SubscriptionTiers = () => {
   const monthlyPremiumTier = {
     name: "Premium Monthly",
     price: "$9.99",
-    priceId: "price_1QsZzhGqQdivam4jOiE4VV8D",
+    priceId: "price_1QsZzhGqQdivam4jOiE4VV8D", // Replace with your actual Stripe price ID
     description: "Advanced features billed monthly",
     buttonText: "Start Monthly Plan",
     features: [
@@ -146,7 +146,7 @@ export const SubscriptionTiers = () => {
   const annualPremiumTier = {
     name: "Premium Annual",
     price: "$99.99",
-    priceId: "price_1Qsa0QGqQdivam4j4JKdGFwY",
+    priceId: "price_1Qsa0QGqQdivam4j4JKdGFwY", // Replace with your actual Stripe price ID
     description: "Save 17% with annual billing",
     buttonText: "Start Annual Plan",
     features: [
