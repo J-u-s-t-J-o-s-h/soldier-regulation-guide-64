@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface Message {
   id: string;
@@ -23,6 +24,7 @@ const Chats = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { subscription } = useSubscription();
+  const navigate = useNavigate();
   
   // Get current user
   const [userId, setUserId] = useState<string | null>(null);
@@ -204,7 +206,7 @@ const Chats = () => {
                       You've reached your daily message limit. Upgrade to Premium for unlimited messages.
                     </p>
                     <Button
-                      onClick={() => window.location.href = '/settings/#upgrade'}
+                      onClick={() => navigate("/settings#upgrade")}
                       className="bg-military-gold hover:bg-military-gold/90 text-military-dark"
                     >
                       Upgrade to Premium
