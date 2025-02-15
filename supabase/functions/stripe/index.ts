@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { stripe } from './stripe.ts'
@@ -58,7 +57,7 @@ serve(async (req) => {
         console.log('Received request for path:', path)
 
         if (path.includes('/stripe/checkout')) {
-          const { priceId, successUrl, cancelUrl } = await req.json()
+          const { priceId, successUrl, cancelUrl } = await req.json() as CreateCheckoutBody
           console.log('Checkout request received:', { priceId, successUrl, cancelUrl })
 
           // First check if customer already exists
@@ -98,6 +97,7 @@ serve(async (req) => {
             stripeCustomerId = customer.id
           }
 
+          console.log('Creating checkout session for customer:', stripeCustomerId)
           const session = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
             line_items: [{ price: priceId, quantity: 1 }],
@@ -106,9 +106,16 @@ serve(async (req) => {
             cancel_url: cancelUrl,
           })
 
+          console.log('Checkout session created:', session.id)
+
           return new Response(
-            JSON.stringify({ sessionId: session.url }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ data: { sessionId: session.url } }),
+            { 
+              headers: { 
+                ...corsHeaders, 
+                'Content-Type': 'application/json'
+              } 
+            }
           )
         }
 
