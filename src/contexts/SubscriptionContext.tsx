@@ -42,13 +42,13 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
+        console.log('No session found, setting default subscription state');
         setState({ isLoading: false, subscription: defaultState.subscription });
         return;
       }
 
-      console.log('Fetching subscription for user:', session.user.id);
+      console.log('Starting subscription fetch for user:', session.user.id);
 
-      // Removed the .eq('status', 'active') filter to check for any subscription
       const { data: sub, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -63,11 +63,17 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         return;
       }
 
-      console.log('Subscription data:', sub);
+      console.log('Raw subscription data:', sub);
+      console.log('Subscription status:', sub?.status);
 
       // Check if the subscription is active or trialing
-      const isActiveOrTrialing = sub?.status === 'active' || sub?.status === 'trialing';
-      console.log('Subscription status:', sub?.status, 'isPremium:', isActiveOrTrialing);
+      const isActiveOrTrialing = Boolean(sub?.status === 'active' || sub?.status === 'trialing');
+      console.log('Is subscription active or trialing?', isActiveOrTrialing);
+      console.log('Status check:', {
+        isActive: sub?.status === 'active',
+        isTrialing: sub?.status === 'trialing',
+        status: sub?.status
+      });
 
       setState({
         isLoading: false,
@@ -75,6 +81,11 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
           status: sub?.status ?? null,
           isPremium: isActiveOrTrialing,
         },
+      });
+
+      console.log('Updated subscription state:', {
+        status: sub?.status ?? null,
+        isPremium: isActiveOrTrialing,
       });
     } catch (error) {
       console.error('Error in fetchSubscription:', error);
@@ -84,6 +95,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
   // Set up realtime subscription
   useEffect(() => {
+    console.log('Setting up realtime subscription...');
     const channel = supabase
       .channel('subscription-updates')
       .on(
@@ -101,6 +113,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       .subscribe();
 
     return () => {
+      console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   }, []);
@@ -112,15 +125,19 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     const authListener = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       
+      console.log('Auth state changed:', event, 'Session:', !!session);
+      
       if (session?.user) {
-        console.log('Auth state changed, fetching subscription');
+        console.log('User is authenticated, fetching subscription');
         fetchSubscription();
       } else {
+        console.log('No authenticated user, setting default state');
         setState({ isLoading: false, subscription: defaultState.subscription });
       }
     });
 
     // Initial fetch
+    console.log('Performing initial subscription fetch');
     fetchSubscription();
 
     return () => {
