@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const assistantId = Deno.env.get('OPENAI_ASSISTANT_ID');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -33,27 +34,106 @@ serve(async (req) => {
       is_user: true
     });
 
-    // Get response from OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Create a thread
+    const threadResponse = await fetch('https://api.openai.com/v1/threads', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are a helpful assistant specializing in Army regulations. Provide accurate, concise information about military procedures, policies, and standards. When answering questions, cite specific regulations when possible.' 
-          },
-          { role: 'user', content: prompt }
-        ],
-      }),
+        'OpenAI-Beta': 'assistants=v1'
+      }
     });
 
-    const data = await response.json();
-    const generatedText = data.choices[0].message.content;
+    if (!threadResponse.ok) {
+      throw new Error('Failed to create thread');
+    }
+
+    const thread = await threadResponse.json();
+
+    // Add message to thread
+    const messageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v1'
+      },
+      body: JSON.stringify({
+        role: 'user',
+        content: prompt
+      })
+    });
+
+    if (!messageResponse.ok) {
+      throw new Error('Failed to add message to thread');
+    }
+
+    // Run the assistant
+    const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v1'
+      },
+      body: JSON.stringify({
+        assistant_id: assistantId
+      })
+    });
+
+    if (!runResponse.ok) {
+      throw new Error('Failed to run assistant');
+    }
+
+    const run = await runResponse.json();
+
+    // Poll for completion
+    let runStatus = run.status;
+    let attempts = 0;
+    const maxAttempts = 30; // Maximum 30 attempts (30 seconds)
+
+    while (runStatus !== 'completed' && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+
+      const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'OpenAI-Beta': 'assistants=v1'
+        }
+      });
+
+      if (!statusResponse.ok) {
+        throw new Error('Failed to check run status');
+      }
+
+      const statusData = await statusResponse.json();
+      runStatus = statusData.status;
+      attempts++;
+
+      if (statusData.status === 'failed') {
+        throw new Error('Assistant run failed');
+      }
+    }
+
+    if (runStatus !== 'completed') {
+      throw new Error('Assistant run timed out');
+    }
+
+    // Get messages
+    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'OpenAI-Beta': 'assistants=v1'
+      }
+    });
+
+    if (!messagesResponse.ok) {
+      throw new Error('Failed to retrieve messages');
+    }
+
+    const messages = await messagesResponse.json();
+    const assistantMessage = messages.data[0]; // Get the latest message (assistant's response)
+    const generatedText = assistantMessage.content[0].text.value;
 
     // Store AI's response
     await supabase.from('chat_messages').insert({
