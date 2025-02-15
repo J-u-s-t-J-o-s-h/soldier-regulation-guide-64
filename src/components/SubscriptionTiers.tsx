@@ -1,8 +1,6 @@
 
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 type FeatureItem = {
   name: string;
@@ -12,59 +10,16 @@ type FeatureItem = {
 type TierProps = {
   name: string;
   price: string;
-  priceId: string;
+  paymentLink: string;
   description: string;
   features: FeatureItem[];
   buttonText: string;
   highlighted?: boolean;
 };
 
-const Tier = ({ name, price, priceId, description, features, buttonText, highlighted }: TierProps) => {
-  const { toast } = useToast();
-
-  const handleSubscribe = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to subscribe",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Starting checkout process for price:', priceId);
-
-      const { data, error } = await supabase.functions.invoke('stripe/checkout', {
-        body: {
-          priceId,
-          successUrl: window.location.origin + '/settings?success=true',
-          cancelUrl: window.location.origin + '/settings?canceled=true',
-        }
-      });
-
-      console.log('Checkout response:', { data, error });
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data?.url) {
-        throw new Error('No checkout URL returned');
-      }
-
-      // Open in a new window/tab instead of redirecting the current page
-      window.open(data.url, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.error('Subscription error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start checkout process. Please try again later.",
-        variant: "destructive",
-      });
-    }
+const Tier = ({ name, price, paymentLink, description, features, buttonText, highlighted }: TierProps) => {
+  const handleSubscribe = () => {
+    window.open(paymentLink, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -114,7 +69,7 @@ export const SubscriptionTiers = () => {
   const freeTier = {
     name: "Free",
     price: "Free",
-    priceId: "", // No price ID for free tier
+    paymentLink: "", // No payment link for free tier
     description: "Essential tools for basic regulation searches",
     buttonText: "Get Started",
     features: [
@@ -130,7 +85,7 @@ export const SubscriptionTiers = () => {
   const monthlyPremiumTier = {
     name: "Premium Monthly",
     price: "$9.99",
-    priceId: "price_1QsZzhGqQdivam4jOiE4VV8D", // Replace with your actual Stripe price ID
+    paymentLink: "https://buy.stripe.com/test_5kA2b4d2I68GdOg5kl",
     description: "Advanced features billed monthly",
     buttonText: "Start Monthly Plan",
     features: [
@@ -146,7 +101,7 @@ export const SubscriptionTiers = () => {
   const annualPremiumTier = {
     name: "Premium Annual",
     price: "$99.99",
-    priceId: "price_1Qsa0QGqQdivam4j4JKdGFwY", // Replace with your actual Stripe price ID
+    paymentLink: "https://buy.stripe.com/test_fZe6rk0fWcx4fWodQQ",
     description: "Save 17% with annual billing",
     buttonText: "Start Annual Plan",
     features: [
