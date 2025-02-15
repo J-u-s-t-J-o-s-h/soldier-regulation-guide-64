@@ -1,5 +1,5 @@
 
-import { Settings as SettingsIcon, CreditCard, User } from "lucide-react";
+import { Settings as SettingsIcon, CreditCard, User, Crown } from "lucide-react";
 import { SubscriptionTiers } from "@/components/SubscriptionTiers";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -7,34 +7,21 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const Settings = () => {
   const { toast } = useToast();
-  const [subscription, setSubscription] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { subscription, isLoading } = useSubscription();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSubscription = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        const { data: sub, error } = await supabase
-          .from('subscriptions')
-          .select('*, prices(*)')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-        setSubscription(sub);
-      } catch (error) {
-        console.error('Error fetching subscription:', error);
-      } finally {
-        setLoading(false);
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email);
       }
     };
-
-    fetchSubscription();
+    getUser();
   }, []);
 
   const handleManageSubscription = async () => {
@@ -65,7 +52,7 @@ const Settings = () => {
       }
 
       const { url } = await response.json();
-      window.location.href = url;
+      window.open(url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -93,6 +80,48 @@ const Settings = () => {
             </div>
 
             <div className="max-w-4xl mx-auto space-y-8">
+              {/* Current Plan Status */}
+              <div className="military-glass p-6 rounded-lg">
+                <h2 className="text-xl font-semibold text-military-gold flex items-center gap-2 mb-4">
+                  <Crown className="h-5 w-5" />
+                  Current Subscription Status
+                </h2>
+                <div className="p-4 bg-military-dark/50 rounded-lg mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-military-text mb-1">
+                        {isLoading ? "Loading..." : subscription.isPremium ? "Premium Plan" : "Free Plan"}
+                      </h3>
+                      <p className="text-military-muted text-sm">
+                        {subscription.isPremium ? (
+                          "Enjoy unlimited access to all premium features"
+                        ) : (
+                          "Limited access to basic features"
+                        )}
+                      </p>
+                    </div>
+                    {subscription.isPremium ? (
+                      <div className="px-3 py-1 bg-military-gold/20 text-military-gold rounded-full text-sm">
+                        Active
+                      </div>
+                    ) : (
+                      <div className="px-3 py-1 bg-military-accent/20 text-military-accent rounded-full text-sm">
+                        Free Tier
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {subscription.isPremium && (
+                  <Button
+                    onClick={handleManageSubscription}
+                    className="w-full bg-military-gold hover:bg-military-gold/90 text-military-dark"
+                  >
+                    Manage Subscription
+                  </Button>
+                )}
+              </div>
+
               <div className="military-glass p-6 rounded-lg">
                 <h2 className="text-xl font-semibold text-military-gold flex items-center gap-2 mb-4">
                   <User className="h-5 w-5" />
@@ -102,7 +131,7 @@ const Settings = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-military-dark/50 rounded-lg">
                     <div>
                       <h3 className="font-medium text-military-text">Email Address</h3>
-                      <p className="text-military-muted">user@example.com</p>
+                      <p className="text-military-muted">{userEmail || "Loading..."}</p>
                     </div>
                     <button className="text-military-gold hover:text-military-gold/80 transition">
                       Change Email
@@ -120,37 +149,15 @@ const Settings = () => {
                 </div>
               </div>
 
-              <div className="military-glass p-6 rounded-lg">
-                <h2 className="text-xl font-semibold text-military-gold flex items-center gap-2 mb-4">
-                  <CreditCard className="h-5 w-5" />
-                  Subscription
-                </h2>
-                <div className="mb-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-military-dark/50 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-military-text">Current Plan</h3>
-                      <p className="text-military-muted">
-                        {loading ? (
-                          "Loading..."
-                        ) : subscription ? (
-                          `${subscription.status === 'active' ? 'Active' : 'Inactive'} - Premium Plan`
-                        ) : (
-                          "Free Plan"
-                        )}
-                      </p>
-                    </div>
-                    {subscription?.status === 'active' && (
-                      <Button
-                        onClick={handleManageSubscription}
-                        className="bg-military-gold hover:bg-military-gold/90 text-military-dark"
-                      >
-                        Manage Subscription
-                      </Button>
-                    )}
-                  </div>
+              {!subscription.isPremium && (
+                <div className="military-glass p-6 rounded-lg">
+                  <h2 className="text-xl font-semibold text-military-gold flex items-center gap-2 mb-4">
+                    <CreditCard className="h-5 w-5" />
+                    Upgrade to Premium
+                  </h2>
+                  <SubscriptionTiers />
                 </div>
-                {!subscription?.status && <SubscriptionTiers />}
-              </div>
+              )}
             </div>
           </div>
         </main>
