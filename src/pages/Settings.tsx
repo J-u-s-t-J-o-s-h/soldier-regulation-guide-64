@@ -8,10 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { subscription, isLoading, refetchSubscription } = useSubscription();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
@@ -33,14 +34,22 @@ const Settings = () => {
     
     getUser();
 
-    if (searchParams.get('success') === 'true') {
-      refetchSubscription();
-      toast({
-        title: "Subscription Updated",
-        description: "Your subscription has been successfully updated.",
-      });
-    }
-  }, [refetchSubscription, searchParams, toast]);
+    // Check for successful subscription and refresh status
+    const checkSubscription = async () => {
+      if (searchParams.get('success') === 'true') {
+        console.log('Subscription success detected, refreshing status...');
+        await refetchSubscription();
+        toast({
+          title: "Subscription Updated",
+          description: "Your subscription has been successfully updated.",
+        });
+        // Remove the success parameter from the URL
+        navigate('/settings', { replace: true });
+      }
+    };
+
+    checkSubscription();
+  }, [refetchSubscription, searchParams, toast, navigate]);
 
   const handleManageSubscription = async () => {
     try {
