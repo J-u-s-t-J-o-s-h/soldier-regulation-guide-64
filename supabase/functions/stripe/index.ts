@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { stripe } from './stripe.ts'
@@ -28,7 +29,7 @@ serve(async (req) => {
 
   const supabaseClient = createClient<Database>(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )
 
   const authHeader = req.headers.get('Authorization')
@@ -60,13 +61,20 @@ serve(async (req) => {
           const { priceId, successUrl, cancelUrl } = await req.json()
           console.log('Checkout request received:', { priceId, successUrl, cancelUrl })
 
-          let { data: customers } = await supabaseClient
+          // First check if customer already exists
+          let { data: customers, error: fetchError } = await supabaseClient
             .from('customers')
             .select('stripe_customer_id')
             .eq('id', user.id)
             .single()
 
-          if (!customers?.stripe_customer_id) {
+          if (fetchError && fetchError.code !== 'PGRST116') {
+            throw fetchError
+          }
+
+          let stripeCustomerId = customers?.stripe_customer_id
+
+          if (!stripeCustomerId) {
             console.log('Creating new Stripe customer for user:', user.id)
             const customer = await stripe.customers.create({
               email: user.email,
@@ -75,16 +83,23 @@ serve(async (req) => {
               },
             })
 
-            const { error } = await supabaseClient
+            const { error: insertError } = await supabaseClient
               .from('customers')
-              .insert([{ id: user.id, stripe_customer_id: customer.id }])
+              .insert([{ 
+                id: user.id,
+                stripe_customer_id: customer.id 
+              }])
 
-            if (error) throw error
-            customers = { stripe_customer_id: customer.id }
+            if (insertError) {
+              console.error('Error inserting customer:', insertError)
+              throw insertError
+            }
+
+            stripeCustomerId = customer.id
           }
 
           const session = await stripe.checkout.sessions.create({
-            customer: customers.stripe_customer_id,
+            customer: stripeCustomerId,
             line_items: [{ price: priceId, quantity: 1 }],
             mode: 'subscription',
             success_url: successUrl,
