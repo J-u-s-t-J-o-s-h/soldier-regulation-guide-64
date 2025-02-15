@@ -52,6 +52,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         .from('subscriptions')
         .select('*')
         .eq('user_id', session.user.id)
+        .eq('status', 'active')
         .order('created', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -64,11 +65,12 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
       console.log('Subscription data:', sub);
 
+      // Update the state based on the active subscription
       setState({
         isLoading: false,
         subscription: {
           status: sub?.status ?? null,
-          isPremium: sub?.status === 'active' || sub?.status === 'trialing',
+          isPremium: Boolean(sub?.status === 'active' || sub?.status === 'trialing'),
         },
       });
     } catch (error) {
@@ -86,7 +88,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         {
           event: '*',
           schema: 'public',
-          table: 'subscriptions'
+          table: 'subscriptions',
         },
         (payload) => {
           console.log('Subscription change detected:', payload);
@@ -100,6 +102,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     };
   }, []);
 
+  // Listen for auth changes and fetch subscription
   useEffect(() => {
     let mounted = true;
 
@@ -114,6 +117,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       }
     });
 
+    // Initial fetch
     fetchSubscription();
 
     return () => {
