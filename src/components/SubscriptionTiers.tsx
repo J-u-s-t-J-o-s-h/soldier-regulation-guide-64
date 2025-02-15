@@ -1,3 +1,4 @@
+
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -34,7 +35,7 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         return;
       }
 
-      const response = await supabase.functions.invoke('stripe', {
+      const response = await supabase.functions.invoke('stripe/checkout', {
         body: {
           priceId,
           successUrl: `${window.location.origin}/settings?success=true`,
