@@ -35,6 +35,8 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         return;
       }
 
+      console.log('Starting checkout process for price:', priceId);
+
       const { data, error } = await supabase.functions.invoke('stripe/checkout', {
         body: {
           priceId,
@@ -43,21 +45,25 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         }
       });
 
+      console.log('Checkout response:', { data, error });
+
       if (error) {
         console.error('Checkout error:', error);
         throw error;
       }
 
       if (!data?.sessionId) {
-        throw new Error('No checkout URL returned');
+        console.error('Invalid response:', data);
+        throw new Error('Invalid checkout response');
       }
 
+      console.log('Redirecting to checkout:', data.sessionId);
       window.location.href = data.sessionId;
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Subscription error:', error);
       toast({
         title: "Error",
-        description: "Failed to start checkout process. Please try again later.",
+        description: error.message || "Failed to start checkout process. Please try again later.",
         variant: "destructive",
       });
     }
