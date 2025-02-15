@@ -49,7 +49,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
         const { data: sub, error } = await supabase
           .from('subscriptions')
-          .select('*, prices(*)')
+          .select('status')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
@@ -57,7 +57,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
         setSubscription({
           status: sub?.status ?? null,
-          isPremium: sub?.status === 'active',
+          isPremium: sub?.status === 'active' || sub?.status === 'trialing',
         });
       } catch (error) {
         console.error('Error fetching subscription:', error);
@@ -68,7 +68,12 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
     fetchSubscription();
 
-    // Subscribe to realtime changes
+    // Listen for auth state changes
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(() => {
+      fetchSubscription();
+    });
+
+    // Subscribe to realtime changes on the subscriptions table
     const channel = supabase
       .channel('subscription-changes')
       .on(
@@ -77,15 +82,17 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
           event: '*',
           schema: 'public',
           table: 'subscriptions',
+          filter: `user_id=eq.${supabase.auth.getSession().then(({ data }) => data.session?.user.id)}`,
         },
-        async (payload) => {
-          // Refresh subscription data when changes occur
+        () => {
+          console.log('Subscription changed, refreshing...');
           fetchSubscription();
         }
       )
       .subscribe();
 
     return () => {
+      authSubscription.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, []);
