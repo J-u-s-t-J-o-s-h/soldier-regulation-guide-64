@@ -1,3 +1,4 @@
+
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -39,8 +40,8 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
       const { data, error } = await supabase.functions.invoke('stripe/checkout', {
         body: {
           priceId,
-          successUrl: `${window.location.origin}/settings?success=true`,
-          cancelUrl: `${window.location.origin}/settings?canceled=true`,
+          successUrl: window.location.origin + '/settings?success=true',
+          cancelUrl: window.location.origin + '/settings?canceled=true',
         }
       });
 
@@ -54,7 +55,8 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         throw new Error('No checkout URL returned');
       }
 
-      window.location.href = data.url;
+      // Open in a new window/tab instead of redirecting the current page
+      window.open(data.url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Subscription error:', error);
       toast({
