@@ -18,10 +18,20 @@ serve(async (req) => {
   }
 
   try {
+    // Validate environment variables
+    if (!openAIApiKey) {
+      throw new Error('OPENAI_API_KEY is not set')
+    }
+    if (!assistantId) {
+      throw new Error('OPENAI_ASSISTANT_ID is not set')
+    }
+
     const { prompt, userId } = await req.json()
 
     if (!prompt) throw new Error('Prompt is required')
     if (!userId) throw new Error('User ID is required')
+
+    console.log('Creating thread with prompt:', prompt)
 
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -44,10 +54,17 @@ serve(async (req) => {
     })
 
     if (!threadResponse.ok) {
-      throw new Error('Failed to create thread')
+      const errorData = await threadResponse.text()
+      console.error('Thread creation failed:', {
+        status: threadResponse.status,
+        statusText: threadResponse.statusText,
+        error: errorData
+      })
+      throw new Error(`Failed to create thread: ${errorData}`)
     }
 
     const thread = await threadResponse.json()
+    console.log('Thread created successfully:', thread.id)
 
     // Add message to thread
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
@@ -64,8 +81,16 @@ serve(async (req) => {
     })
 
     if (!messageResponse.ok) {
+      const errorData = await messageResponse.text()
+      console.error('Message creation failed:', {
+        status: messageResponse.status,
+        statusText: messageResponse.statusText,
+        error: errorData
+      })
       throw new Error('Failed to add message to thread')
     }
+
+    console.log('Message added to thread successfully')
 
     // Run the assistant
     const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
@@ -81,10 +106,17 @@ serve(async (req) => {
     })
 
     if (!runResponse.ok) {
+      const errorData = await runResponse.text()
+      console.error('Run creation failed:', {
+        status: runResponse.status,
+        statusText: runResponse.statusText,
+        error: errorData
+      })
       throw new Error('Failed to run assistant')
     }
 
     const run = await runResponse.json()
+    console.log('Assistant run started:', run.id)
 
     // Poll for completion
     let runStatus = run.status
@@ -102,12 +134,19 @@ serve(async (req) => {
       })
 
       if (!statusResponse.ok) {
+        const errorData = await statusResponse.text()
+        console.error('Status check failed:', {
+          status: statusResponse.status,
+          statusText: statusResponse.statusText,
+          error: errorData
+        })
         throw new Error('Failed to check run status')
       }
 
       const statusData = await statusResponse.json()
       runStatus = statusData.status
       attempts++
+      console.log('Run status:', runStatus, 'Attempt:', attempts)
 
       if (statusData.status === 'failed') {
         throw new Error('Assistant run failed')
@@ -118,6 +157,8 @@ serve(async (req) => {
       throw new Error('Assistant run timed out')
     }
 
+    console.log('Run completed successfully')
+
     // Get messages
     const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
       headers: {
@@ -127,12 +168,20 @@ serve(async (req) => {
     })
 
     if (!messagesResponse.ok) {
+      const errorData = await messagesResponse.text()
+      console.error('Messages retrieval failed:', {
+        status: messagesResponse.status,
+        statusText: messagesResponse.statusText,
+        error: errorData
+      })
       throw new Error('Failed to retrieve messages')
     }
 
     const messages = await messagesResponse.json()
     const assistantMessage = messages.data[0] // Get the latest message (assistant's response)
     const generatedText = assistantMessage.content[0].text.value
+
+    console.log('Retrieved assistant response successfully')
 
     // Store AI's response
     await supabase.from('chat_messages').insert({
