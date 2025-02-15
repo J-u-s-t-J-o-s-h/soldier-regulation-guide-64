@@ -18,9 +18,9 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response('No authorization header', {
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
         status: 401,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -29,9 +29,9 @@ serve(async (req) => {
     )
 
     if (authError || !user) {
-      return new Response('Unauthorized', {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -50,7 +50,7 @@ serve(async (req) => {
       }
 
       // Get or create customer
-      let { data: customerData } = await supabaseClient
+      const { data: customerData } = await supabaseClient
         .from('customers')
         .select('stripe_customer_id')
         .eq('id', user.id)
@@ -67,9 +67,13 @@ serve(async (req) => {
           },
         })
 
-        await supabaseClient
+        const { error: insertError } = await supabaseClient
           .from('customers')
           .insert([{ id: user.id, stripe_customer_id: customer.id }])
+
+        if (insertError) {
+          throw new Error('Failed to create customer record')
+        }
 
         stripeCustomerId = customer.id
       }
@@ -84,10 +88,10 @@ serve(async (req) => {
         cancel_url: cancelUrl,
       })
 
-      console.log('Checkout session created:', session.id)
+      console.log('Checkout session created:', session)
 
       return new Response(
-        JSON.stringify({ data: { sessionId: session.url } }),
+        JSON.stringify({ url: session.url }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -95,9 +99,9 @@ serve(async (req) => {
       )
     }
 
-    return new Response('Method not allowed', {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
     console.error('Error:', error)
