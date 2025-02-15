@@ -35,9 +35,7 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         return;
       }
 
-      console.log('Creating checkout session for price:', priceId);
-
-      const response = await supabase.functions.invoke('stripe/checkout', {
+      const { data, error } = await supabase.functions.invoke('stripe/checkout', {
         body: {
           priceId,
           successUrl: `${window.location.origin}/settings?success=true`,
@@ -45,20 +43,16 @@ const Tier = ({ name, price, priceId, description, features, buttonText, highlig
         }
       });
 
-      console.log('Checkout response:', response);
-
-      if (response.error) {
-        console.error('Checkout error:', response.error);
-        throw response.error;
+      if (error) {
+        console.error('Checkout error:', error);
+        throw error;
       }
 
-      const { data: { sessionId } } = response;
-      if (sessionId) {
-        console.log('Redirecting to:', sessionId);
-        window.location.href = sessionId;
-      } else {
-        throw new Error('No session URL returned');
+      if (!data?.sessionId) {
+        throw new Error('No checkout URL returned');
       }
+
+      window.location.href = data.sessionId;
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -132,7 +126,7 @@ export const SubscriptionTiers = () => {
   const monthlyPremiumTier = {
     name: "Premium Monthly",
     price: "$9.99",
-    priceId: "price_1QsZzhGqQdivam4jOiE4VV8D", // Real monthly premium price ID
+    priceId: "price_1QsZzhGqQdivam4jOiE4VV8D",
     description: "Advanced features billed monthly",
     buttonText: "Start Monthly Plan",
     features: [
@@ -148,7 +142,7 @@ export const SubscriptionTiers = () => {
   const annualPremiumTier = {
     name: "Premium Annual",
     price: "$99.99",
-    priceId: "price_1Qsa0QGqQdivam4j4JKdGFwY", // Real annual premium price ID
+    priceId: "price_1Qsa0QGqQdivam4j4JKdGFwY",
     description: "Save 17% with annual billing",
     buttonText: "Start Annual Plan",
     features: [
