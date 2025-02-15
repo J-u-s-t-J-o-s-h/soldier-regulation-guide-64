@@ -1,5 +1,5 @@
 
-import { Home, Book, Bookmark, Search, Settings, Menu, MessageSquare } from "lucide-react";
+import { Home, Book, Bookmark, Search, Settings, Menu, MessageSquare, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +10,9 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const navigationItems = [
   {
@@ -46,6 +48,27 @@ const navigationItems = [
 ];
 
 export function AppSidebar() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate("/auth");
+      toast({
+        title: "Signed out successfully",
+        description: "Come back soon!",
+      });
+    } catch (error) {
+      toast({
+        title: "Error signing out",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Sidebar className="border-r border-military-accent/20">
@@ -69,6 +92,19 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   </Link>
                 ))}
+
+                {/* Sign Out Button */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={handleSignOut}
+                    className="w-full justify-start gap-3 text-red-500 hover:text-red-600"
+                  >
+                    <LogOut className="h-5 w-5 shrink-0" />
+                    <span className="text-sm font-medium truncate">
+                      Sign Out
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
