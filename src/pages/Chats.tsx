@@ -1,4 +1,3 @@
-
 import { MessageSquare, Send, Lock } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -205,7 +204,7 @@ const Chats = () => {
                       You've reached your daily message limit. Upgrade to Premium for unlimited messages.
                     </p>
                     <Button
-                      onClick={() => window.location.href = '/settings'}
+                      onClick={() => window.location.href = '/settings#upgrade'}
                       className="bg-military-gold hover:bg-military-gold/90 text-military-dark"
                     >
                       Upgrade to Premium
