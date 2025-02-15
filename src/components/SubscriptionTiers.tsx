@@ -19,7 +19,9 @@ type TierProps = {
 
 const Tier = ({ name, price, paymentLink, description, features, buttonText, highlighted }: TierProps) => {
   const handleSubscribe = () => {
-    window.open(paymentLink, '_blank', 'noopener,noreferrer');
+    if (paymentLink) {
+      window.open(paymentLink, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -57,7 +59,7 @@ const Tier = ({ name, price, paymentLink, description, features, buttonText, hig
             ? "bg-military-gold hover:bg-military-gold/90 text-military-dark" 
             : "border-military-gold text-military-gold hover:bg-military-gold/10"
         }`}
-        onClick={handleSubscribe}
+        onClick={paymentLink ? handleSubscribe : undefined}
       >
         {buttonText}
       </Button>
@@ -71,7 +73,7 @@ export const SubscriptionTiers = () => {
     price: "Free",
     paymentLink: "", // No payment link for free tier
     description: "Essential tools for basic regulation searches",
-    buttonText: "Get Started",
+    buttonText: "Free Plan",
     features: [
       { name: "Basic search functionality", included: true },
       { name: "Limited AI-generated responses per day", included: true },
