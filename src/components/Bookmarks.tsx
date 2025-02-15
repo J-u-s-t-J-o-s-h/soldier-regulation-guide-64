@@ -1,7 +1,10 @@
 
-import { Bookmark } from "lucide-react";
+import { Bookmark, Lock } from "lucide-react";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { Button } from "./ui/button";
 
 export const Bookmarks = () => {
+  const { subscription } = useSubscription();
   const bookmarks = [
     {
       title: "AR 670-1",
@@ -12,6 +15,29 @@ export const Bookmarks = () => {
       description: "Army Training and Leader Development",
     },
   ];
+
+  if (!subscription.isPremium) {
+    return (
+      <div className="w-full max-w-2xl animate-fade-up delay-200">
+        <h2 className="text-military-gold text-sm font-medium mb-3 flex items-center gap-2">
+          <Lock size={16} />
+          Premium Feature
+        </h2>
+        <div className="military-glass p-6 rounded-lg text-center">
+          <p className="text-military-muted mb-4">
+            Bookmarking is available for premium subscribers only.
+          </p>
+          <Button
+            variant="outline"
+            className="border-military-gold text-military-gold hover:bg-military-gold/10"
+            onClick={() => window.location.href = '/settings'}
+          >
+            Upgrade to Premium
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-2xl animate-fade-up delay-200">
