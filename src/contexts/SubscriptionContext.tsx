@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 type SubscriptionStatus = "active" | "trialing" | "canceled" | "incomplete" | "incomplete_expired" | "past_due" | "unpaid" | null;
@@ -10,6 +10,7 @@ interface SubscriptionContextType {
     status: SubscriptionStatus;
     isPremium: boolean;
   };
+  refetchSubscription: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
@@ -18,6 +19,7 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
     status: null,
     isPremium: false,
   },
+  refetchSubscription: async () => {},
 });
 
 export const useSubscription = () => {
@@ -30,7 +32,6 @@ export const useSubscription = () => {
 
 export const SubscriptionProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<{
     status: SubscriptionStatus;
     isPremium: boolean;
@@ -39,23 +40,19 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     isPremium: false,
   });
 
-  const fetchSubscription = useCallback(async (userId?: string) => {
+  const fetchSubscription = async () => {
     try {
-      if (!userId) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          setIsLoading(false);
-          return;
-        }
-        userId = session.user.id;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setSubscription({ status: null, isPremium: false });
+        setIsLoading(false);
+        return;
       }
-
-      setCurrentUserId(userId);
 
       const { data: sub, error } = await supabase
         .from('subscriptions')
         .select('status')
-        .eq('user_id', userId)
+        .eq('user_id', session.user.id)
         .maybeSingle();
 
       if (error) {
@@ -66,7 +63,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       const newStatus = sub?.status ?? null;
       const isPremium = newStatus === 'active' || newStatus === 'trialing';
 
-      console.log('Setting subscription status:', { status: newStatus, isPremium });
+      console.log('Subscription status updated:', { status: newStatus, isPremium });
 
       setSubscription({
         status: newStatus,
@@ -77,70 +74,28 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    let mounted = true;
-    let authSubscription: { unsubscribe: () => void } | null = null;
-    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+    fetchSubscription();
 
-    const initializeSubscriptions = async () => {
-      if (!mounted) return;
-
-      // Initial fetch
-      await fetchSubscription();
-
-      // Listen for auth state changes
-      authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (!mounted) return;
-        
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
         if (session?.user) {
-          await fetchSubscription(session.user.id);
+          await fetchSubscription();
         } else {
-          setCurrentUserId(null);
           setSubscription({ status: null, isPremium: false });
         }
-      }).data.subscription;
-
-      // Set up realtime subscription only if we have a user ID
-      if (currentUserId) {
-        realtimeChannel = supabase
-          .channel('subscription-changes')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'subscriptions',
-              filter: `user_id=eq.${currentUserId}`,
-            },
-            async (payload) => {
-              if (!mounted) return;
-              console.log('Subscription change detected:', payload);
-              await fetchSubscription(currentUserId);
-            }
-          )
-          .subscribe((status) => {
-            console.log('Realtime subscription status:', status);
-          });
       }
-    };
-
-    initializeSubscriptions();
+    );
 
     return () => {
-      mounted = false;
-      if (authSubscription) {
-        authSubscription.unsubscribe();
-      }
-      if (realtimeChannel) {
-        supabase.removeChannel(realtimeChannel);
-      }
+      authSubscription.unsubscribe();
     };
-  }, [fetchSubscription, currentUserId]);
+  }, []);
 
   return (
-    <SubscriptionContext.Provider value={{ isLoading, subscription }}>
+    <SubscriptionContext.Provider value={{ isLoading, subscription, refetchSubscription: fetchSubscription }}>
       {children}
     </SubscriptionContext.Provider>
   );
