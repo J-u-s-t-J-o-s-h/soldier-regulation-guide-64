@@ -30,6 +30,7 @@ export const useSubscription = () => {
 
 export const SubscriptionProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<{
     status: SubscriptionStatus;
     isPremium: boolean;
@@ -49,6 +50,8 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         userId = session.user.id;
       }
 
+      setCurrentUserId(userId);
+
       const { data: sub, error } = await supabase
         .from('subscriptions')
         .select('status')
@@ -60,12 +63,14 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         return;
       }
 
-      console.log('Subscription status:', sub?.status);
-      
-      // Only update state if component is still mounted
+      const newStatus = sub?.status ?? null;
+      const isPremium = newStatus === 'active' || newStatus === 'trialing';
+
+      console.log('Setting subscription status:', { status: newStatus, isPremium });
+
       setSubscription({
-        status: sub?.status ?? null,
-        isPremium: sub?.status === 'active' || sub?.status === 'trialing',
+        status: newStatus,
+        isPremium,
       });
     } catch (error) {
       console.error('Error fetching subscription:', error);
@@ -92,31 +97,33 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         if (session?.user) {
           await fetchSubscription(session.user.id);
         } else {
+          setCurrentUserId(null);
           setSubscription({ status: null, isPremium: false });
         }
       }).data.subscription;
 
-      // Subscribe to realtime changes
-      realtimeChannel = supabase
-        .channel('subscription-updates')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'subscriptions',
-          },
-          async (payload) => {
-            if (!mounted) return;
-            
-            console.log('Subscription table changed:', payload);
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-              await fetchSubscription(session.user.id);
+      // Set up realtime subscription only if we have a user ID
+      if (currentUserId) {
+        realtimeChannel = supabase
+          .channel('subscription-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'subscriptions',
+              filter: `user_id=eq.${currentUserId}`,
+            },
+            async (payload) => {
+              if (!mounted) return;
+              console.log('Subscription change detected:', payload);
+              await fetchSubscription(currentUserId);
             }
-          }
-        )
-        .subscribe();
+          )
+          .subscribe((status) => {
+            console.log('Realtime subscription status:', status);
+          });
+      }
     };
 
     initializeSubscriptions();
@@ -130,7 +137,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         supabase.removeChannel(realtimeChannel);
       }
     };
-  }, [fetchSubscription]);
+  }, [fetchSubscription, currentUserId]);
 
   return (
     <SubscriptionContext.Provider value={{ isLoading, subscription }}>
